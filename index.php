@@ -1,161 +1,81 @@
 <?php
 
-// © Avishkar Patil
-// Change Output According Your Requirements
-// DO NOT REMOVE Credit
-// DON'T ASK FOR PLAYER CODES HERE ALL THINGS CREATE IT
+// Don't Edit , any problems 
+// ©  @Avishkatpatil [ TG ]
+// Star This Repo
 
 $url =$_GET['c'];
 if($url !=""){
-$uid = str_replace('https://www.mxplayer.in/', '/', $url); 
-$murl =file_get_contents("https://seo.mxplay.com/v1/api/seo/get-url-details?url=$uid");
+$id = end(explode('/', $url));
+$tlink ="https://gwapi.zee5.com/content/details/$id?translation=en&country=IN&version=2";
+$tokenurl =file_get_contents("https://useraction.zee5.com/token/platform_tokens.php?platform_name=web_app");
+$tok =json_decode($tokenurl, true);
+$token =$tok['token'];
 
-$mx =json_decode($murl, true);
-$id =$mx['data']['id'];
-$type =$mx['data']['type'];
-$title =$mx['data']['title'];
-$des =$mx['data']['description'];
+$vtok =file_get_contents("http://useraction.zee5.com/tokennd/");
+$vtokn =json_decode($vtok, true);
+$vtoken =$vtokn['video_token'];
+
+
+$curl = curl_init();
+curl_setopt_array($curl, array(
+  CURLOPT_URL => $tlink,
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => "",
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_CUSTOMREQUEST => "GET",
+  CURLOPT_HTTPHEADER => array(
+    "x-access-token: $token",
+    "Content-Type: application/json"
+  ),
+));
+$response = curl_exec($curl);
+curl_close($curl);
+
+$z5 =json_decode($response, true);
+$image =$z5['image_url'];
+$cover =$z5['cover_image'];
+$title =$z5['title'];
+$des =$z5['description'];
+$release =$z5['release_date'];
+$actor =$z5['actors'];
+$gen =$z5['genre'][0]['id'];
+$gen1 =$z5['genre'][1]['id'];
+$lang =$z5['languages'];
+
+$vhls =$z5['hls'][0];
+$vdash =$z5['video'][0];
+
+$sub =$z5['video_details']['vtt_thumbnail_url'];
+$drmkey = $z5['drm_key_id'];
+$error =$z5['error_code'];
+$vidt = str_replace('drm', 'hls', $vhls);
+
+$img = str_replace('270x152', '1170x658', $image);                                     // Landscape Image
+$pro = "https://akamaividz2.zee5.com/image/upload/resources/".$id."/portrait/".$cover; // portrait Image
+
+$hls = "https://zee5vodnd.akamaized.net".$vidt.$vtoken;  // HLS Url
+$dash = "https://zee5vodnd.akamaized.net".$vdash;        // Dash URL
+
 header("Content-Type: application/json");
+$errr= array("error" => "Put Here Only ZEE5 Proper URL ,  Invalid Input " );
+$err =json_encode($errr);
+
+$apii = array("title" => $title, "description" => $des,  "Release" => $release, "language" => $lang, "genre" => $gen.",".$gen1 , "thumbnail" => $img, "portrait" => $pro, "actor" => $actor, "drm_key" => $drmkey, "video_url" => $hls, "dash" => $dash, "subtitle_url" => $sub, "created_by" => "Avishkar Patil");
+
+$api =json_encode($apii, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
 
 
-$mxurl =file_get_contents("https://api.mxplay.com/v1/web/detail/video?type=$type&id=$id&platform=com.mxplay.desktop&device-density=2&userid=30bb09af-733a-413b-b8b7-b10348ec2b3d&content-languages=hi,mr,pa,bn,en,ml,kn,gu,te,ta");
-
-$mxdata =json_decode($mxurl, true);
-$mtitle =$mxdata['title'];
-$mdes =$mxdata['description'];
-$relese =$mxdata['releaseDate'];
-$imgu =$mxdata['imageInfo'][1]['url'];
-$img = "https://isa-1.mxplay.com/".$imgu;
-$vhash = $mxdata['stream']['videoHash'];
-
-$dasht = $mxdata['stream']['thirdParty']['dashUrl'];
-$alt = $mxdata['stream']['altBalaji']['dashUrl'];
-$h = $mxdata['stream']['dash']['high'];
-$b = $mxdata['stream']['dash']['base'];
-$m = $mxdata['stream']['dash']['main'];
-
-
-$hu = $mxdata['stream']['thirdParty']['hlsUrl'];
-$ab = $mxdata['stream']['altBalaji']['hlsUrl'];
-$x = $mxdata['stream']['hls']['high'];
-$y = $mxdata['stream']['hls']['base'];
-$z = $mxdata['stream']['hls']['main'];
-
- 
-//--------- DONT THINK ABOYT THIS ------//
-
-if (empty($h)) {
-}
-else
-{$dash=$h;}
-  if (empty($b)) {
-}
-  else
-{$dash=$b;}
-
-  if (empty($m)) {
-}
-else
-{$dash=$m;}
-
-
-if (empty($alt)) {
-}
-else
-{$dd=$alt;}
-
-if (empty($dasht)) {
-}
-else
-{$dd=$dasht;}
-
-
-if (preg_match("/https/", $dash))
-{$url = $dash;}
-else
-{$url = "https://llvod.mxplay.com/" . $dash;}
-
-if (is_null($dash)){
-$dplay = $dd;
-}
- else
- {$dplay = $url;}
-
-// Final OutPut Is $dplay ( DRM URL)
-
-
-if (empty($x)) {
-}
-else
-{$hls =$x;}
-  if (empty($y)) {
-}
-  else
-{$hls=$y;}
-
-  if (empty($z)) {
-}
-else
-{$hls=$z;}
-
-
-if (empty($ab)) {
-}
-else
-{$hh=$ab;}
-
-if (empty($hu)) {
-  }
-else
-{$hh=$hu;}
-
-
-
-if (preg_match("/https/", $hls))
-{$xyz = $hls;}
-else
-{$xyz = "https://llvod.mxplay.com/" . $hls;}
- 
-if (is_null($hls))
-{$hplay = $hh;}
-else
-{ $hplay = $xyz;}
-
-
-
-// Fianl output is $hplay (HLS URL)
-
-
- 
- //--------- DONT THINK ABOYT THIS ------//
- 
- 
-
- $apii = array("id" => $id, "type" => $type, "title" => $mtitle, "description" => $mdes, "releaseDate" => $relese, "images" => $img, "videoHash" => $vhash, "hls" => $hplay, "dash" => $dplay);
-
- $api =json_encode($apii, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
-
-
-$ex= array("error" => "Something went wrong, Check URL" );
-$err =json_encode($ex);
-
-if($id ==""){
+if($error ==101){
 echo $err;
 }
 else{
-  header("X-UA-Compatible: IE=edge");
-  header("Content-Type: application/json");
-
 echo $api;
 }
 }
 else{
-  $ex= array("error" => "Something went wrong, Check URL" );
-  $err =json_encode($ex);
- 
- // © Avishkar Patil
-
-  echo $err;
+  header("Content-Type: application/json");
+  echo "Hello There Is Problem In Your Link Or Check Your Link Format !!";
+  // © Avishkar Patil 
 }
-
-
+?>
