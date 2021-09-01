@@ -1,51 +1,90 @@
 <?php
-	$idcontent = substr($argv[1], -6);
-	$data = '{"initObj":{"Locale":{"LocaleLanguage":"","LocaleCountry":"","LocaleDevice":"","LocaleUserState":"Unknown"},"Platform":"Web","SiteGuid":"","DomainID":0,"UDID":"","ApiUser":"tvpapi_225","ApiPass":"11111"},"MediaID":"' . $idcontent . '","mediaType":0,"picSize":"full","withDynamic":false}';
 
-	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_URL, 'http://tvpapi-as.ott.kaltura.com/v3_4/gateways/jsonpostgw.aspx?m=GetMediaInfo');
-	curl_setopt($ch, CURLOPT_POST, 1);   
-	curl_setopt($ch, CURLOPT_HTTPHEADER, array('Content-Type: application/json;charset=utf-8'));
-	curl_setopt($ch, CURLOPT_POSTFIELDS, $data);
-	curl_setopt($ch, CURLOPT_REFERER, $argv[1]);
-	curl_setopt($ch, CURLOPT_ENCODING , "gzip");
-	curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (X11; Linux i686; rv:41.0) Gecko/20100101 Firefox/41.0 Iceweasel/41.0");
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
-	$result = curl_exec($ch);
+// © Avishkar Patil
 
-	curl_close ($ch);
+$url = $_GET["c"];
+if($url !=""){
 
-	preg_match('/"Format":"dash Main".*?CoGuid":"(.*?)"/', $result, $ids);
-	preg_match('/"MediaName":"(.*?)"/', $result, $name);
+$pid = str_replace('https://www.hoichoi.tv/', '/', $url); 
 
-	$name= str_ireplace(' ', '-', $name[1]);
 
-	preg_match('/(.*?)_0_/', $ids[1], $entryId);
+$hlink ="https://prod-api-cached-2.viewlift.com/content/pages?path=$pid&site=hoichoitv&includeContent=true&moduleOffset=0&moduleLimit=4&languageCode=en&countryCode=IN";
 
-	$url = "http://cdnapi.kaltura.com/api_v3/index.php?service=multirequest&apiVersion=3.1&expiry=86400&clientTag=kwidget%3Av2.41__5147509b&format=1&ignoreNull=1&action=null&1:service=session&1:action=startWidgetSession&1:widgetId=_1982551&2:ks=%7B1%3Aresult%3Aks%7D&2:contextDataParams:referrer=http%3A%2F%2Fplayer.kaltura.com%2FkWidget%2Ftests%2FkWidget.getSources.html%23__1982551%2C" . $entryId[1] . "&2:contextDataParams:objectType=KalturaEntryContextDataParams&2:contextDataParams:flavorTags=all&2:service=baseentry&2:entryId=" . $entryId[1] . "&2:action=getContextData&3:ks=%7B1%3Aresult%3Aks%7D&3:service=baseentry&3:action=get&3:version=-1&3:entryId=" . $entryId[1] . "&kalsig=";
+$auth = file_get_contents("auth.php");
+$curl = curl_init();
+curl_setopt_array($curl, array(
+  CURLOPT_URL => $hlink,
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => "",
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_CUSTOMREQUEST => "GET",
+  CURLOPT_HTTPHEADER => array(
+    "authorization: $auth",
+    "Content-Type: application/json"
+  ),
+));
+$response = curl_exec($curl);
+curl_close($curl);
 
-	$ch = curl_init();
-	curl_setopt($ch, CURLOPT_URL, $url);
-	curl_setopt($ch, CURLOPT_HTTPHEADER, array('X-Forwarded-For: 27.123.127.255'));
-	curl_setopt($ch, CURLOPT_USERAGENT, "Mozilla/5.0 (X11; Linux i686; rv:41.0) Gecko/20100101 Firefox/41.0 Iceweasel/41.0");
-	curl_setopt($ch, CURLOPT_RETURNTRANSFER, true); 
-	$result1 = curl_exec($ch);
-	curl_close ($ch);
+$a1 =json_decode($response, true);
 
-	preg_match_all('/\{"flavorParamsId":.*?,(.*?),"frameRate.*?"id":"(.*?)".*?\}/', $result1, $all);
+$id = $a1['modules'][1]['contentData'][0]['gist']['id'];
 
-	if(!isset($argv[4])){
-		foreach($all[1] as $r) {
-			echo "$r\n";
-		}
-	} else {
-		preg_match("/\"bitrate\":$argv[4].*?\"id\":\"(.*?)\"/", $result1, $flavorId);
-		$link = 'https://vootvideo.akamaized.net/enc/fhls/p/1982551/sp/198255100/serveFlavor/entryId/' . $entryId[1] . '/v/2/pv/1/flavorId/' . $flavorId[1] . '/name/a.mp4/index.m3u8';
-		echo "Live Stream URL: $link\n\n";
+$hclink ="https://prod-api.viewlift.com/entitlement/video/status?id=$id&deviceType=web_browser&contentConsumption=web";
 
-		echo "Starting  LiveStreamer...\n\n";
-		echo "Starting  FFmpeg...\n\n";
-		echo shell_exec("$argv[3]ffmpeg -i \"$link\" -bsf:a aac_adtstoasc -c copy \"$argv[2]$name.mp4\" &");
-		echo "Done.\n";
-	}
+$xurl = curl_init();
+curl_setopt_array($xurl, array(
+  CURLOPT_URL => $hclink,
+  CURLOPT_RETURNTRANSFER => true,
+  CURLOPT_ENCODING => "",
+  CURLOPT_FOLLOWLOCATION => true,
+  CURLOPT_CUSTOMREQUEST => "GET",
+  CURLOPT_HTTPHEADER => array(
+    "Accept: application/json, text/plain, */*",
+    "Authorization: $auth",
+    "User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36",
+    "Origin: https://www.hoichoi.tv",
+    "Host: prod-api.viewlift.com",
+    "Referer: https://www.hoichoi.tv/",
+    "Accept-Language: en-US,en;q=0.9",
+    "Connection: keep-alive"
+  ),
+));
+$result = curl_exec($xurl);
+curl_close($xurl);
+
+$hoichoi =json_decode($result, true);
+
+$title = $hoichoi['video']['gist']['title'];
+$des = $hoichoi['video']['gist']['description'];
+$lang = $hoichoi['video']['gist']['languageCode'];
+
+$srt = $hoichoi['video']['contentDetails']['closedCaptions'][0]['url']; //srt subtitle for vtt change 0 to 1
+
+$pro = $hoichoi['video']['gist']['posterImageUrl']; // portrait poster
+$land = $hoichoi['video']['gist']['videoImageUrl']; // Landscape Poster
+
+$hls = $hoichoi['video']['streamingInfo']['videoAssets']['hls']; // auto all qualities included
+$h270 = $hoichoi['video']['streamingInfo']['videoAssets']['mpeg'][0]['url']; // 270p
+$h360 = $hoichoi['video']['streamingInfo']['videoAssets']['mpeg'][0]['url']; // 360p
+$h720 = $hoichoi['video']['streamingInfo']['videoAssets']['mpeg'][0]['url']; // 720p
+
+
+ $apii = array("created_by" => "Avishkar Patil", "id" => $id, "lang" => $lang, "title" => $title, "description" => $des, "landscape" => $land, "portrait" => $pro, "hls" => $hls, "270p" => $h270, "360p" => $h360, "720p" => $h720, "subtitle" => $srt);
+
+ $api =json_encode($apii, JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+
+
+header("X-UA-Compatible: IE=edge");
+header("Content-Type: application/json");
+echo $api;
+
+}
+else{
+  $ex= array("error" => "Something went wrong, Check URL and Parameters !", "created_by" => "Avishkar Patil" );
+  $error =json_encode($ex);
+
+  echo $error;
+}
+
 ?>
